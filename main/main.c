@@ -45,10 +45,10 @@ void pin_callback(uint gpio, uint32_t events) {
 void trigger_task(void *pvParameters) {
     while(1) {
         gpio_put(TRIGGER_PIN, 1);
-        vTaskDelay(1);
+        vTaskDelay(pdMS_TO_TICKS(250));
         gpio_put(TRIGGER_PIN, 0);
-        vTaskDelay(1);
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(250));
+        
     }
 }
 
@@ -65,12 +65,11 @@ void echo_task(void *pvParameters) {
         double distance = 0.0;
         if(xQueueReceive(xQueueTime, &time_start, pdMS_TO_TICKS(100))) {
             if(xQueueReceive(xQueueTime, &time_end, pdMS_TO_TICKS(100))) {
-                distance = V_SOM * (time_end - time_start) * 1e-6 * 1e2/2;
+                distance = V_SOM * (time_end - time_start) * 1e-4/2;
                 xQueueSend(xQueueDistance, &distance, 0);
                 xSemaphoreGive(xSemaphoreTrigger);
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
@@ -85,7 +84,7 @@ void oled_task(void *pvParameters) {
     while(1) {
         double distance = 0.0;
 
-        if(xSemaphoreTake(xSemaphoreTrigger, pdMS_TO_TICKS(100))) {
+        if(xSemaphoreTake(xSemaphoreTrigger, pdMS_TO_TICKS(500)) == pdTRUE) {
             if(xQueueReceive(xQueueDistance, &distance, pdMS_TO_TICKS(100))) {
                 int line = 14;
                 sprintf(dist, "Dist: %f cm", distance);
@@ -98,12 +97,12 @@ void oled_task(void *pvParameters) {
                 gfx_draw_line(&disp, 14, 27, line, 27);
                 vTaskDelay(pdMS_TO_TICKS(50));
                 gfx_show(&disp);
-            } else {
-                gfx_clear_buffer(&disp);
-                gfx_draw_string(&disp, 0, 0, 1, "Dist: FALHA!");
-                vTaskDelay(pdMS_TO_TICKS(50));
-                gfx_show(&disp);
             }
+        } else {
+            printf("oidhsadasdajisdaj");
+            gfx_clear_buffer(&disp);
+            gfx_draw_string(&disp, 0, 0, 1, "Falhou!");
+            gfx_show(&disp);
         }
     }
 }
@@ -115,6 +114,8 @@ int main() {
     xSemaphoreTrigger = xSemaphoreCreateBinary();
     xQueueTime = xQueueCreate(32, sizeof(double));
     xQueueDistance = xQueueCreate(32, sizeof(double));
+
+    xSemaphoreGive(xSemaphoreTrigger);
 
     xTaskCreate(trigger_task, "Trigger Task", 256, NULL, 1, NULL);
     xTaskCreate(echo_task, "Echo Task", 256, NULL, 1, NULL);
