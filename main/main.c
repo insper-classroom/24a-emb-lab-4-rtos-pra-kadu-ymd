@@ -20,7 +20,6 @@ SemaphoreHandle_t xSemaphoreTrigger;
 const int TRIGGER_PIN = 2;
 const int ECHO_PIN = 3;
 const int V_SOM = 343;
-double delta = 0.0;
 char dist[20];
 
 void pin_init(void) {
@@ -66,8 +65,7 @@ void echo_task(void *pvParameters) {
         double distance = 0.0;
         if(xQueueReceive(xQueueTime, &time_start, pdMS_TO_TICKS(100))) {
             if(xQueueReceive(xQueueTime, &time_end, pdMS_TO_TICKS(100))) {
-                delta = (time_end - time_start) * 1e-6;
-                distance = V_SOM * delta * 1e2/2;
+                distance = V_SOM * (time_end - time_start) * 1e-6 * 1e2/2;
                 xQueueSend(xQueueDistance, &distance, 0);
                 xSemaphoreGive(xSemaphoreTrigger);
             }
