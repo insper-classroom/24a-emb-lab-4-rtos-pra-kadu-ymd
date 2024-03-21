@@ -20,6 +20,8 @@ SemaphoreHandle_t xSemaphoreTrigger;
 const int TRIGGER_PIN = 2;
 const int ECHO_PIN = 3;
 const int V_SOM = 343;
+double delta = 0.0;
+char dist[20];
 
 void pin_init(void) {
     gpio_init(TRIGGER_PIN);
@@ -61,7 +63,6 @@ void echo_task(void *pvParameters) {
                                        &pin_callback);
 
     while(1) {
-        double delta = 0.0;
         double distance = 0.0;
         if(xQueueReceive(xQueueTime, &time_start, pdMS_TO_TICKS(100))) {
             if(xQueueReceive(xQueueTime, &time_end, pdMS_TO_TICKS(100))) {
@@ -85,7 +86,6 @@ void oled_task(void *pvParameters) {
 
     while(1) {
         double distance = 0.0;
-        char dist[20];
 
         if(xSemaphoreTake(xSemaphoreTrigger, pdMS_TO_TICKS(100))) {
             if(xQueueReceive(xQueueDistance, &distance, pdMS_TO_TICKS(100))) {
